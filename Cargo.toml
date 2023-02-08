@@ -1,0 +1,17 @@
+[package]
+name = "bioristor-lib"
+version = "0.1.0"
+authors = ["Francesco Saccani <francesco.saccani@unipr.it>"]
+edition = "2021"
+description = "Rust library targetting embedded devices for the Bioristor project"
+readme = "README.md"
+repository = "https://github.com/franksacco/bioristor-lib"
+
+[features]
+default = []
+adaptive = []
+brute-force = []
+
+[dependencies]
+micromath = "2.0.0"
+nalgebra = { version = "0.32.1", default-features = false }

@@ -14,6 +14,8 @@ use crate::utils::{BestOrderedList, FloatRange};
 /// * `M` - The type of the model.
 /// * `L` - The type of the loss.
 /// * `MINIMA` - The number of minima to keep track of.
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Adaptive<M: Model, L: Loss, const MINIMA: usize> {
     /// The model to be solved.
     model: M,
@@ -91,6 +93,8 @@ impl<M: Model, L: Loss, const MINIMA: usize> Algorithm<M, AdaptiveParams, L>
 }
 
 /// The parameters of the adaptive algorithm.
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdaptiveParams {
     /// The initial guessed value for the concentration.
     pub concentration_guess: f32,

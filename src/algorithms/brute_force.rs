@@ -12,6 +12,8 @@ use crate::utils::FloatRange;
 ///
 /// * `M` - The type of the model.
 /// * `L` - The type of the loss.
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct BruteForce<M: Model, L: Loss> {
     /// The model to be solved.
     model: M,
@@ -74,6 +76,8 @@ impl<M: Model, L: Loss> Algorithm<M, BruteForceParams, L> for BruteForce<M, L> {
 }
 
 /// The parameters of the brute force algorithm.
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct BruteForceParams {
     /// The range of concentrations to search.
     pub concentration_range: FloatRange,

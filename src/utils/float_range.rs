@@ -12,7 +12,8 @@
 ///    println!("{}", i);
 /// }
 /// ```
-#[derive(Clone)]
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FloatRange {
     /// The lower bound of the range (inclusive).
     start: f32,
@@ -72,7 +73,8 @@ impl IntoIterator for FloatRange {
 /// assert!((iter.next().unwrap() - 0.9).abs() < 1e-6);
 /// assert_eq!(iter.next(), None);
 /// ```
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FloatRangeIter {
     /// The current value of the iterator.
     value: f32,

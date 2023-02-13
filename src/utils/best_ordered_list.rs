@@ -14,6 +14,8 @@ const DEFAULT: (Variables, f32) = (
 /// # Type parameters
 ///
 /// * `N` - The number of solutions to keep.
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct BestOrderedList<const N: usize> {
     data: [(Variables, f32); N],
 }

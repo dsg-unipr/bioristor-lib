@@ -78,6 +78,8 @@ pub trait Model {
 ///
 /// The output of the equation in implicit form is taken as the error of
 /// a particular solution.
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ThreeEquations {
     /// The parameters of the mathematical model.
     params: ModelParams,

@@ -48,7 +48,7 @@ impl Loss for MeanRelative {
         ((a - b).abs() / (a.abs() + b.abs() + f32::EPSILON)
             + (c - d).abs() / (c.abs() + d.abs() + f32::EPSILON)
             + (e - f).abs() / (e.abs() + f.abs() + f32::EPSILON))
-            / 3.0
+            * (1.0 / 3.0)
     }
 }
 

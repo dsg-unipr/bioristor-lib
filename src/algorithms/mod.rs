@@ -1,11 +1,7 @@
-#[cfg(feature = "adaptive")]
 mod adaptive;
-#[cfg(feature = "brute-force")]
 mod brute_force;
 
-#[cfg(feature = "adaptive")]
 pub use adaptive::*;
-#[cfg(feature = "brute-force")]
 pub use brute_force::*;
 
 use crate::losses::Loss;

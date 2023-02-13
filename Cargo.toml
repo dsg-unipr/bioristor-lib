@@ -7,11 +7,6 @@ description = "Rust library targetting embedded devices for the Bioristor projec
 readme = "README.md"
 repository = "https://github.com/franksacco/bioristor-lib"
 
-[features]
-default = []
-adaptive = []
-brute-force = []
-
 [dependencies]
 micromath = "2.0.0"
 nalgebra = { version = "0.32.1", default-features = false }

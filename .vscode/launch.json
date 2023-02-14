@@ -1,0 +1,37 @@
+{
+    "configurations": [
+        {
+            "configFiles": ["nucleo-l476rg/openocd.cfg"],
+            "cwd": "${workspaceFolder}",
+            "device": "STM32L476RG",
+            "executable": "target/thumbv7em-none-eabihf/debug/bioristor-nucleo-l476rg",
+            "gdbPath": "gdb-multiarch",
+            "name": "Debug on Nucleo-L476RG",
+            "postLaunchCommands": [
+                "monitor arm semihosting enable"
+            ],
+            "request": "launch",
+            "runToEntryPoint": "main",
+            "servertype": "openocd",
+            "svdFile": "nucleo-l476rg/STM32L4x6.svd",
+            "type": "cortex-debug",
+        },
+        {
+            "configFiles": ["nucleo-f767zi/openocd.cfg"],
+            "cwd": "${workspaceFolder}",
+            "device": "STM32F767ZI",
+            "executable": "target/thumbv7em-none-eabihf/debug/bioristor-nucleo-f767zi",
+            "gdbPath": "gdb-multiarch",
+            "name": "Debug on Nucleo-F767ZI",
+            "postLaunchCommands": [
+                "monitor arm semihosting enable"
+            ],
+            "request": "launch",
+            "runToEntryPoint": "main",
+            "servertype": "openocd",
+            "svdFile": "nucleo-f767zi/STM32F767.svd",
+            "type": "cortex-debug",
+        }
+    ],
+    "version": "0.2.0"
+}

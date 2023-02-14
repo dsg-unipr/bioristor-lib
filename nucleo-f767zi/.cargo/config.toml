@@ -1,0 +1,18 @@
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
+# replace STM32F767ZITx with your chip as listed in `probe-run --list-chips`
+runner = "probe-run --connect-under-reset --chip STM32F767ZITx"
+
+rustflags = [
+  "-C", "link-arg=--nmagic",
+  "-C", "link-arg=-Tlink.x",
+  "-C", "link-arg=-Tdefmt.x",
+]
+
+[build]
+target = "thumbv7em-none-eabihf" # Cortex-M7F
+
+[alias]
+upload = "flash --connect-under-reset --chip STM32F767ZITx"
+
+[env]
+DEFMT_LOG="trace"

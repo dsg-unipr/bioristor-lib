@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "bioristor-lib",
-    "nucleo-f767zi"
+    "nucleo-f767zi",
+    "nucleo-l476rg"
 ]
 
 [profile.dev]

@@ -2,5 +2,24 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "name": "bioristor-lib"
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "marus25.cortex-debug"
+            ]
+        }
+    },
+    "name": "bioristor-lib",
+
+    "capAdd": ["SYS_PTRACE"],
+    "securityOpt": ["seccomp=unconfined"],
+    "remoteUser": "root",
+    "runArgs": [
+        // Mounting the entire `/dev` folder is not a good practice.
+        // A better approach might be to expose a specific host device to the
+        // container, for example using "--device=/dev/ttyACM0".
+        "--volume=/dev:/dev",
+        // Required to access usb devices.
+        "--device-cgroup-rule=c 189:* rmw"
+    ]
 }

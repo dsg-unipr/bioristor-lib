@@ -20,6 +20,8 @@ pub trait Loss {
 /// of the three equations of the model.
 /// The relative error of an equation is calculated as follows:
 /// `|left - right| / ( |left| + |right| )`.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MaxRelative;
 
 impl Loss for MaxRelative {
@@ -38,6 +40,8 @@ impl Loss for MaxRelative {
 /// of the three equations of the model.
 /// The relative error of an equation is calculated as follows:
 /// `|left - right| / ( |left| + |right| )`.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MeanRelative;
 
 impl Loss for MeanRelative {
@@ -56,6 +60,8 @@ impl Loss for MeanRelative {
 /// of the three equations of the model.
 /// The relative error of an equation is calculated as follows:
 /// `|left - right| / ( |left| + |right| )`.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SumRelative;
 
 impl Loss for SumRelative {

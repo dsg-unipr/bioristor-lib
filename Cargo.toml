@@ -2,7 +2,8 @@
 members = [
     "bioristor-lib",
     "nucleo-f767zi",
-    "nucleo-l476rg"
+    "nucleo-l476rg",
+    "profiler"
 ]
 
 [profile.dev]

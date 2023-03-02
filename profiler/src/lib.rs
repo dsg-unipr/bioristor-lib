@@ -57,8 +57,7 @@ pub struct Profiler {
 }
 
 impl Profiler {
-    /// Setup the DWT (Data Watchpoint and Trace) unit and start counting
-    /// CPU cycles.
+    /// Setup the SysTick counter and start counting CPU cycles.
     ///
     /// # Parameters
     ///

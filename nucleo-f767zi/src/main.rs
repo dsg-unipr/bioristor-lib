@@ -13,6 +13,7 @@ use bioristor_lib::{
     params::{Currents, Geometrics, ModelParams, Voltages},
     utils::FloatRange,
 };
+use profiler::{cycles_to_ms, Profiler};
 
 const ALG_PARAMS: AdaptiveParams = AdaptiveParams {
     concentration_guess: 1e-3,
@@ -41,8 +42,10 @@ const CORE_FREQ: u32 = 216_000_000;
 fn main() -> ! {
     // Retrieve device peripherals.
     let dp: pac::Peripherals = pac::Peripherals::take().unwrap();
+    let cp: pac::CorePeripherals = pac::CorePeripherals::take().unwrap();
 
     let rcc = dp.RCC.constrain();
+    let syst = cp.SYST;
 
     // Configure clocks.
     let clocks = rcc.cfgr.sysclk(CORE_FREQ.Hz()).freeze();
@@ -66,7 +69,7 @@ fn main() -> ! {
     };
     defmt::debug!("{}", currents);
 
-    // Execute the algorithm.
+    // Setup model and algorithm.
     let model = ThreeEquations::new(MODEL_PARAMS, currents);
     defmt::debug!("{}", MODEL_PARAMS);
     let algorithm: Adaptive<_, MeanRelative, 10> = Adaptive::new(model, ALG_PARAMS);
@@ -76,7 +79,13 @@ fn main() -> ! {
     defmt::info!("Starting algorithm execution...");
     red_led.set_high();
 
+    let profiler = Profiler::new(syst);
+
+    // Run algorithm.
     let res = algorithm.run();
+
+    let cycles = profiler.cycles();
+    defmt::info!("Execution took {} ms", cycles_to_ms::<CORE_FREQ>(cycles));
 
     red_led.set_low();
     green_led.set_high();

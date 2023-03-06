@@ -18,3 +18,4 @@ stm32f7xx-hal = { version = "0.7", features = ["stm32f767", "rt"] }
 panic-probe ={ version = "0.3", features = ["print-defmt"] }
 
 bioristor-lib = { path = "../bioristor-lib", features = ["defmt"] }
+profiler = { path = "../profiler" }

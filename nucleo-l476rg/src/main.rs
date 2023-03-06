@@ -13,6 +13,7 @@ use bioristor_lib::{
     params::{Currents, Geometrics, ModelParams, Voltages},
     utils::FloatRange,
 };
+use profiler::{cycles_to_ms, Profiler};
 
 const ALG_PARAMS: AdaptiveParams = AdaptiveParams {
     concentration_guess: 1e-3,
@@ -46,6 +47,7 @@ fn main() -> ! {
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
     let mut pwr = dp.PWR.constrain(&mut rcc.apb1r1);
+    let mut syst = cp.SYST;
 
     // Configure clocks.
     let clocks = rcc
@@ -61,8 +63,10 @@ fn main() -> ! {
         .pa5
         .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
 
-    let mut delay = Delay::new(cp.SYST, clocks);
+    // Setup delay.
+    let mut delay = Delay::new(syst, clocks);
     delay.delay_ms(1000_u32);
+    syst = delay.free();
 
     let currents = Currents {
         i_ds_max: -0.0020613,
@@ -71,6 +75,7 @@ fn main() -> ! {
     };
     defmt::debug!("{}", currents);
 
+    // Setup model and algorithm.
     let model = ThreeEquations::new(MODEL_PARAMS, currents);
     defmt::debug!("{}", MODEL_PARAMS);
     let algorithm: Adaptive<_, MeanRelative, 10> = Adaptive::new(model, ALG_PARAMS);
@@ -79,7 +84,14 @@ fn main() -> ! {
     defmt::info!("Starting algorithm execution...");
     led.set_high();
 
+    let profiler = Profiler::new(syst);
+
+    // Run algorithm.
     let res = algorithm.run();
+
+    let cycles = profiler.cycles();
+    defmt::info!("Execution took {} ms", cycles_to_ms::<CORE_FREQ>(cycles));
+    syst = profiler.free();
 
     led.set_low();
 
@@ -92,6 +104,7 @@ fn main() -> ! {
         }
     }
 
+    let mut delay = Delay::new(syst, clocks);
     delay.delay_ms(1000_u32);
 
     loop {

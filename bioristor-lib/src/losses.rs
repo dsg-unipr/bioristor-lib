@@ -18,6 +18,20 @@ pub trait Loss {
     fn evaluate(value: Self::ModelOutput) -> f32;
 }
 
+/// This loss function simply returns the absolute value of the provided output.
+/// This is useful when the loss function is not needed,
+/// for example when using the equation model.
+pub struct Absolute;
+
+impl Loss for Absolute {
+    type ModelOutput = f32;
+
+    #[inline]
+    fn evaluate(value: Self::ModelOutput) -> f32 {
+        value.abs()
+    }
+}
+
 /// This loss function calculates the error as the maximum of the relative error
 /// of the three equations of the model.
 /// The relative error of an equation is calculated as follows:
@@ -89,6 +103,12 @@ impl Loss for SumRelative {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_absolute() {
+        assert_eq!(Absolute::evaluate(1.0), 1.0);
+        assert_eq!(Absolute::evaluate(-1.0), 1.0);
+    }
 
     #[test]
     fn test_max_relative() {

@@ -83,7 +83,7 @@ pub trait EquationModel: Model {
 ///
 /// let concentration = 10.0;
 /// let value = model.value(concentration);
-/// 
+///
 /// let resistance = model.resistance(concentration);
 /// let saturation = model.saturation(concentration);
 /// ```

@@ -1,13 +1,36 @@
-use core::marker::PhantomData;
-use core::usize;
+use crate::{
+    algorithms::Algorithm,
+    losses::Loss,
+    models::{Model, SystemModel},
+    params::Variables,
+    utils::{BestOrderedList, FloatRange},
+};
 
-use crate::algorithms::Algorithm;
-use crate::losses::Loss;
-use crate::model::Model;
-use crate::params::Variables;
-use crate::utils::{BestOrderedList, FloatRange};
+/// The parameters of the adaptive algorithm.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct AdaptiveParams {
+    /// The initial guessed value for the concentration.
+    pub concentration_init: f32,
 
-/// Implementation of the adaptive algorithm.
+    /// The number of steps in which the concentration interval is divided.
+    pub concentration_steps: usize,
+
+    /// The maximum number of iterations.
+    pub max_iterations: usize,
+
+    /// The number of minima over which the algorithm will average and finds the
+    /// optimal values for the variables.
+    pub minima_number: usize,
+
+    /// The range of water saturation to search.
+    pub saturation_range: FloatRange,
+
+    /// The range of wet drain-source resistance to search.
+    pub resistance_range: FloatRange,
+}
+
+/// Implementation of the adaptive algorithm for the system model.
 ///
 /// # Type parameters
 ///
@@ -16,30 +39,32 @@ use crate::utils::{BestOrderedList, FloatRange};
 /// * `MINIMA` - The number of minima to keep track of.
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Adaptive<M: Model, L: Loss, const MINIMA: usize> {
-    /// The model to be solved.
-    model: M,
-
+pub struct AdaptiveSystem<M: Model, L: Loss, const MINIMA: usize> {
     /// The parameters of the algorithm.
     params: AdaptiveParams,
 
-    _t: PhantomData<L>,
+    /// The model to be solved.
+    model: M,
+
+    _t: core::marker::PhantomData<L>,
 }
 
-impl<M: Model, L: Loss, const MINIMA: usize> Algorithm<M, AdaptiveParams, L>
-    for Adaptive<M, L, MINIMA>
+impl<M, L, const MINIMA: usize> Algorithm<AdaptiveParams, M> for AdaptiveSystem<M, L, MINIMA>
+where
+    M: SystemModel,
+    L: Loss<ModelOutput = [(f32, f32); 3]>,
 {
     /// Create a new instance of the adaptive algorithm.
     ///
     /// # Arguments
     ///
-    /// * `model` - The model to be solved by the algorithm.
     /// * `params` - The parameters of the algorithm.
-    fn new(model: M, params: AdaptiveParams) -> Self {
+    /// * `model` - The model to be solved by the algorithm.
+    fn new(params: AdaptiveParams, model: M) -> Self {
         Self {
             params,
             model,
-            _t: PhantomData,
+            _t: core::marker::PhantomData,
         }
     }
 
@@ -53,7 +78,7 @@ impl<M: Model, L: Loss, const MINIMA: usize> Algorithm<M, AdaptiveParams, L>
     fn run(&self) -> Option<(Variables, f32)> {
         let mut best: BestOrderedList<MINIMA> = Default::default();
 
-        let mut support = self.params.concentration_guess;
+        let mut support = self.params.concentration_init;
 
         for _ in 0..self.params.max_iterations {
             best.clear();
@@ -70,7 +95,7 @@ impl<M: Model, L: Loss, const MINIMA: usize> Algorithm<M, AdaptiveParams, L>
                             resistance: r,
                             saturation: s,
                         };
-                        let (_, error) = self.model.value_with_loss::<L>(&vars);
+                        let error = L::evaluate(self.model.value(vars));
 
                         // Add the solution to the best solutions.
                         best.add_solution((vars, error));
@@ -92,71 +117,59 @@ impl<M: Model, L: Loss, const MINIMA: usize> Algorithm<M, AdaptiveParams, L>
     }
 }
 
-/// The parameters of the adaptive algorithm.
-#[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct AdaptiveParams {
-    /// The initial guessed value for the concentration.
-    pub concentration_guess: f32,
-
-    /// The number of steps in which the concentration interval is divided.
-    pub concentration_steps: usize,
-
-    /// The maximum number of iterations.
-    pub max_iterations: usize,
-
-    /// The range of water saturation to search.
-    pub saturation_range: FloatRange,
-
-    /// The range of wet drain-source resistance to search.
-    pub resistance_range: FloatRange,
-}
-
 #[cfg(test)]
 mod tests {
-    use nalgebra::Vector3;
-
-    use crate::losses;
-    use crate::model::Model;
-    use crate::params::{Currents, ModelParams};
+    use crate::{
+        losses::SumRelative,
+        models::{Model, SystemModel},
+        params::{Currents, ModelParams},
+    };
 
     use super::*;
 
-    struct ModelMock;
+    struct SystemModelMock;
 
-    impl Model for ModelMock {
+    impl Model for SystemModelMock {
         fn new(_: ModelParams, _: Currents) -> Self {
             Self
         }
 
-        fn value_with_loss<L: Loss>(&self, variables: &Variables) -> (Vector3<f32>, f32) {
-            (
-                Vector3::new(
-                    variables.concentration,
-                    variables.resistance,
-                    variables.saturation,
-                ),
-                L::evaluate(&[
-                    (variables.concentration, 0.0),
-                    (variables.resistance, 0.0),
-                    (variables.saturation, 0.0),
-                ]),
-            )
+        fn params(&self) -> &ModelParams {
+            unimplemented!()
+        }
+
+        fn currents(&self) -> &Currents {
+            unimplemented!()
+        }
+    }
+
+    impl SystemModel for SystemModelMock {
+        fn value(&self, vars: Variables) -> [(f32, f32); 3] {
+            [
+                (vars.concentration, 0.0),
+                (vars.resistance, 0.0),
+                (vars.saturation, 0.0),
+            ]
+        }
+
+        fn jacobian(&self, _: Variables) -> nalgebra::Matrix3<f32> {
+            unimplemented!()
         }
     }
 
     #[test]
-    fn test_adaptive() {
+    fn test_adaptive_system() {
         let params = AdaptiveParams {
-            concentration_guess: 0.0,
+            concentration_init: 0.0,
             concentration_steps: 10,
+            max_iterations: 10,
+            minima_number: 5,
             saturation_range: FloatRange::new(0.0, 10.0, 10),
             resistance_range: FloatRange::new(0.0, 10.0, 10),
-            max_iterations: 10,
         };
-        let model = ModelMock;
+        let model = SystemModelMock;
 
-        let algorithm = Adaptive::<_, losses::SumRelative, 5>::new(model, params);
+        let algorithm = AdaptiveSystem::<_, SumRelative, 5>::new(params, model);
         let (vars, error) = algorithm.run().unwrap();
 
         assert_eq!(vars.concentration, 0.0);

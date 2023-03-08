@@ -2,6 +2,6 @@
 
 pub mod algorithms;
 pub mod losses;
-pub mod model;
+pub mod models;
 pub mod params;
 pub mod utils;

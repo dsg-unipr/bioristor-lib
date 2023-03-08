@@ -1,5 +1,5 @@
 /// The parameters of the mathematical model.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ModelParams {
     /// The geometrical characteristics of each vessel in the stem of the plant.
@@ -17,7 +17,7 @@ pub struct ModelParams {
 }
 
 /// The output currents of the device.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Currents {
     /// Minimum current measured between drain and source [Ampere].
@@ -31,7 +31,7 @@ pub struct Currents {
 }
 
 /// The geometrical characteristics of each vessel in the stem of the plant.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Geometrics {
     /// Cross sectional area of a vessel in the stem of the plant [Square Metre].
@@ -42,7 +42,7 @@ pub struct Geometrics {
 }
 
 /// The dependent variables of the model.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Variables {
     /// Concentration of ions in the electrolyte [Molarity].
@@ -57,7 +57,7 @@ pub struct Variables {
 }
 
 /// The input voltages of the device.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Voltages {
     /// Voltage applied between drain and source [Volt].

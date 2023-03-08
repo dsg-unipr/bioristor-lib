@@ -4,8 +4,7 @@ mod brute_force;
 pub use adaptive::*;
 pub use brute_force::*;
 
-use crate::losses::Loss;
-use crate::model::Model;
+use crate::models::Model;
 use crate::params::Variables;
 
 /// Common interface for algorithm implementations.
@@ -14,15 +13,14 @@ use crate::params::Variables;
 ///
 /// * `P` - The type of the parameters of the algoprithm.
 /// * `M` - The type of the model.
-/// * `L` - The type of the loss.
-pub trait Algorithm<M: Model, P: Sized, L: Loss> {
+pub trait Algorithm<P: Sized, M: Model> {
     /// Create a new instance of the algorithm.
     ///
     /// # Arguments
     ///
-    /// * `model` - The model to be solved by the algorithm.
     /// * `params` - The parameters of the algorithm.
-    fn new(model: M, params: P) -> Self;
+    /// * `model` - The model to be solved by the algorithm.
+    fn new(params: P, model: M) -> Self;
 
     /// Tries to solve the model for the given parameters using this algorithm
     /// and returns the best solution found.

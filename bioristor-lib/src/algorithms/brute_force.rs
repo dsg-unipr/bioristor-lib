@@ -1,12 +1,26 @@
-use core::marker::PhantomData;
+use crate::{
+    algorithms::Algorithm,
+    losses::Loss,
+    models::{Model, SystemModel},
+    params::Variables,
+    utils::FloatRange,
+};
 
-use crate::algorithms::Algorithm;
-use crate::losses::Loss;
-use crate::model::Model;
-use crate::params::Variables;
-use crate::utils::FloatRange;
+/// The parameters of the brute force algorithm.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct BruteForceParams {
+    /// The range of concentrations to search.
+    pub concentration_range: FloatRange,
 
-/// Implementation of the brute force algorithm.
+    /// The range of wet drain-source resistance to search.
+    pub resistance_range: FloatRange,
+
+    /// The range of water saturation to search.
+    pub saturation_range: FloatRange,
+}
+
+/// Implementation of the brute force algorithm for the system model.
 ///
 /// # Type parameters
 ///
@@ -14,28 +28,32 @@ use crate::utils::FloatRange;
 /// * `L` - The type of the loss.
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct BruteForce<M: Model, L: Loss> {
-    /// The model to be solved.
-    model: M,
-
+pub struct BruteForceSystem<M: Model, L: Loss> {
     /// The parameters of the algorithm.
     params: BruteForceParams,
 
-    _t: PhantomData<L>,
+    /// The model to be solved.
+    model: M,
+
+    _t: core::marker::PhantomData<L>,
 }
 
-impl<M: Model, L: Loss> Algorithm<M, BruteForceParams, L> for BruteForce<M, L> {
+impl<M, L> Algorithm<BruteForceParams, M> for BruteForceSystem<M, L>
+where
+    M: SystemModel,
+    L: Loss<ModelOutput = [(f32, f32); 3]>,
+{
     /// Create a new instance of the brute force algorithm.
     ///
     /// # Arguments
     ///
-    /// * `model` - The model to be solved by the algorithm.
     /// * `params` - The parameters of the algorithm.
-    fn new(model: M, params: BruteForceParams) -> Self {
+    /// * `model` - The model to be solved by the algorithm.
+    fn new(params: BruteForceParams, model: M) -> Self {
         Self {
-            model,
             params,
-            _t: PhantomData,
+            model,
+            _t: core::marker::PhantomData,
         }
     }
 
@@ -58,7 +76,7 @@ impl<M: Model, L: Loss> Algorithm<M, BruteForceParams, L> for BruteForce<M, L> {
                         saturation: s,
                     };
 
-                    let (_, error) = self.model.value_with_loss::<L>(&vars);
+                    let error = L::evaluate(self.model.value(vars));
 
                     if let Some((_, best_error)) = best {
                         if error < best_error {
@@ -75,50 +93,43 @@ impl<M: Model, L: Loss> Algorithm<M, BruteForceParams, L> for BruteForce<M, L> {
     }
 }
 
-/// The parameters of the brute force algorithm.
-#[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct BruteForceParams {
-    /// The range of concentrations to search.
-    pub concentration_range: FloatRange,
-
-    /// The range of wet drain-source resistance to search.
-    pub resistance_range: FloatRange,
-
-    /// The range of water saturation to search.
-    pub saturation_range: FloatRange,
-}
-
 #[cfg(test)]
 mod tests {
-    use nalgebra::Vector3;
-
-    use crate::losses;
-    use crate::model::Model;
-    use crate::params::{Currents, ModelParams};
+    use crate::{
+        losses::SumRelative,
+        models::{Model, SystemModel},
+        params::{Currents, ModelParams},
+    };
 
     use super::*;
 
-    struct ModelMock;
+    struct SystemModelMock;
 
-    impl Model for ModelMock {
+    impl Model for SystemModelMock {
         fn new(_: ModelParams, _: Currents) -> Self {
             Self
         }
 
-        fn value_with_loss<L: Loss>(&self, variables: &Variables) -> (Vector3<f32>, f32) {
-            (
-                Vector3::new(
-                    variables.concentration,
-                    variables.resistance,
-                    variables.saturation,
-                ),
-                L::evaluate(&[
-                    (variables.concentration, 0.0),
-                    (variables.resistance, 0.0),
-                    (variables.saturation, 0.0),
-                ]),
-            )
+        fn params(&self) -> &ModelParams {
+            unimplemented!()
+        }
+
+        fn currents(&self) -> &Currents {
+            unimplemented!()
+        }
+    }
+
+    impl SystemModel for SystemModelMock {
+        fn value(&self, vars: Variables) -> [(f32, f32); 3] {
+            [
+                (vars.concentration, 0.0),
+                (vars.resistance, 0.0),
+                (vars.saturation, 0.0),
+            ]
+        }
+
+        fn jacobian(&self, _: Variables) -> nalgebra::Matrix3<f32> {
+            unimplemented!()
         }
     }
 
@@ -129,9 +140,9 @@ mod tests {
             resistance_range: FloatRange::new(0.0, 1.0, 10),
             saturation_range: FloatRange::new(0.0, 1.0, 10),
         };
-        let model = ModelMock;
+        let model = SystemModelMock;
 
-        let algorithm = BruteForce::<_, losses::SumRelative>::new(model, params);
+        let algorithm = BruteForceSystem::<_, SumRelative>::new(params, model);
         let (vars, error) = algorithm.run().unwrap();
 
         assert_eq!(vars.concentration, 0.0);

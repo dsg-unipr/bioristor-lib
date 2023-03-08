@@ -1,5 +1,7 @@
+pub use equation::*;
 pub use system::*;
 
+mod equation;
 mod system;
 
 #[allow(unused_imports)]

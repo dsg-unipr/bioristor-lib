@@ -1,10 +1,12 @@
 mod adaptive;
 mod brute_force;
 mod gradient_descent;
+mod newton;
 
 pub use adaptive::*;
 pub use brute_force::*;
 pub use gradient_descent::*;
+pub use newton::*;
 
 use crate::models::Model;
 use crate::params::Variables;

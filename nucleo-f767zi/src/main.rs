@@ -7,16 +7,16 @@ use panic_probe as _; // panic handler
 use stm32f7xx_hal::{pac, prelude::*};
 
 use bioristor_lib::{
-    algorithms::{Adaptive, AdaptiveParams, Algorithm},
+    algorithms::{AdaptiveSystem, AdaptiveParams, Algorithm},
     losses::MeanRelative,
-    model::{Model, ThreeEquations},
+    models::{Model, System},
     params::{Currents, Geometrics, ModelParams, Voltages},
     utils::FloatRange,
 };
 use profiler::{cycles_to_ms, Profiler};
 
 const ALG_PARAMS: AdaptiveParams = AdaptiveParams {
-    concentration_guess: 1e-3,
+    concentration_init: 1e-2,
     concentration_steps: 100,
     max_iterations: 4,
     resistance_range: FloatRange::new(0.0, 5.0, 100),
@@ -70,9 +70,9 @@ fn main() -> ! {
     defmt::debug!("{}", currents);
 
     // Setup model and algorithm.
-    let model = ThreeEquations::new(MODEL_PARAMS, currents);
+    let model = System::new(MODEL_PARAMS, currents);
     defmt::debug!("{}", MODEL_PARAMS);
-    let algorithm: Adaptive<_, MeanRelative, 10> = Adaptive::new(model, ALG_PARAMS);
+    let algorithm: AdaptiveSystem<_, MeanRelative, 10> = AdaptiveSystem::new(ALG_PARAMS, model);
     defmt::debug!("{}", ALG_PARAMS);
 
     blue_led.set_low();

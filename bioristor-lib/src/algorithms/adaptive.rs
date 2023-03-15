@@ -19,10 +19,6 @@ pub struct AdaptiveParams {
     /// The maximum number of iterations.
     pub max_iterations: usize,
 
-    /// The number of minima over which the algorithm will average and finds the
-    /// optimal values for the variables.
-    pub minima_number: usize,
-
     /// The range of water saturation to search.
     pub saturation_range: FloatRange,
 
@@ -36,7 +32,8 @@ pub struct AdaptiveParams {
 ///
 /// * `M` - The model to be solved.
 /// * `L` - The loss function to be used.
-/// * `MINIMA` - The number of minima to keep track of.
+/// * `MINIMA` - The number of minima over which the algorithm will average and
+///     finds the optimal values for the variables.
 pub struct AdaptiveEquation<M: Model, L: Loss, const MINIMA: usize> {
     /// The parameters of the algorithm.
     params: AdaptiveParams,
@@ -282,7 +279,6 @@ mod tests {
             concentration_init: 1.0,
             concentration_steps: 500,
             max_iterations: 10,
-            minima_number: 5,
             saturation_range: FloatRange::new(0.0, 10.0, 10),
             resistance_range: FloatRange::new(0.0, 10.0, 10),
         };
@@ -303,7 +299,6 @@ mod tests {
             concentration_init: 0.0,
             concentration_steps: 10,
             max_iterations: 10,
-            minima_number: 5,
             saturation_range: FloatRange::new(0.0, 10.0, 10),
             resistance_range: FloatRange::new(0.0, 10.0, 10),
         };

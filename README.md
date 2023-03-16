@@ -1,6 +1,10 @@
 # `bioristor-lib`
 
-Library that implements the algorithms for solving the mathematical model that describes the behavior of the Bioristor sensor for embedded devices (`no_std` packages).
+This repository contains the following packages:
+* `bioristor-lib`: library that implements the algorithms for solving the mathematical model that describes the behavior of the Bioristor sensor for embedded devices (`no_std` packages);
+* `nucleo-f767zi`: example of application of the `bioristor-lib` library to a [NUCLEO-F767ZI](https://www.st.com/en/evaluation-tools/nucleo-f767zi.html) board;
+* `nucleo-l476rg`: example of application of the `bioristor-lib` library to a [NUCLEO-L476RG](https://www.st.com/en/evaluation-tools/nucleo-l476rg.html) board;
+* `profiler`: library that implements a profiler based on `SysTick` for Cortex-M microcontrollers.
 
 
 ## Table of Contents

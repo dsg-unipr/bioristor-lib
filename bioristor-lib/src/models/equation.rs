@@ -59,24 +59,23 @@ pub trait EquationModel: Model {
 ///
 /// ```
 /// use bioristor_lib::models::{Model, Equation, EquationModel};
-/// use bioristor_lib::params::{Currents, Geometrics, ModelParams, Voltages};
+/// use bioristor_lib::params::{
+///     Currents, ModelParams, ModulationParams, StemResistanceInvParams, Voltages,
+/// };
 ///
 /// const PARAMS: ModelParams = ModelParams {
-///     geometrics: Geometrics {
-///         cross_sectional_area: 1.0,
-///         length: 2.0,
-///     },
-///     r_ds_dry: 3.0,
-///     vessels_number: 4.0,
+///     mod_params: ModulationParams(1.0, 2.0, 3.0),
+///     r_dry: 4.0,
+///     res_params: StemResistanceInvParams(5.0, 6.0),
 ///     voltages: Voltages {
-///         v_ds: 5.0,
-///         v_gs: 6.0,
+///         v_ds: 7.0,
+///         v_gs: 8.0,
 ///     },
 /// };
 /// let currents = Currents {
-///     i_ds_min: 7.0,
-///     i_ds_max: 8.0,
-///     i_gs: 9.0,
+///     i_ds_off: 9.0,
+///     i_ds_on: 10.0,
+///     i_gs_on: 11.0,
 /// };
 ///
 /// let model = Equation::new(PARAMS, currents);
@@ -121,41 +120,31 @@ impl Model for Equation {
     fn new(params: ModelParams, currents: Currents) -> Self {
         Equation {
             func_coeffs: FuncCoeffs(
-                currents.i_gs,
-                params.vessels_number
-                    * params.voltages.v_gs
-                    * params.geometrics.cross_sectional_area
+                currents.i_gs_on,
+                params.voltages.v_gs
                     * params.voltages.v_ds
-                    * (currents.i_ds_min - currents.i_ds_max + currents.i_gs),
-                params.vessels_number
-                    * params.voltages.v_gs
-                    * params.geometrics.cross_sectional_area
-                    * currents.i_ds_min
-                    * (params.voltages.v_ds - currents.i_ds_max * params.r_ds_dry
-                        + currents.i_gs * params.r_ds_dry),
-                currents.i_ds_min
-                    * params.r_ds_dry
-                    * params.geometrics.length
-                    * (currents.i_ds_max - currents.i_gs),
+                    * (currents.i_ds_off - currents.i_ds_on + currents.i_gs_on),
+                params.voltages.v_gs
+                    * currents.i_ds_off
+                    * (params.voltages.v_ds - currents.i_ds_on * params.r_dry
+                        + currents.i_gs_on * params.r_dry),
+                currents.i_ds_off * params.r_dry * (currents.i_ds_on - currents.i_gs_on),
             ),
             resistance_coeffs: ResistanceCoeffs(
-                params.r_ds_dry
+                params.r_dry
                     * params.voltages.v_ds
-                    * (currents.i_ds_min - currents.i_ds_max + currents.i_gs),
-                params.vessels_number
-                    * params.voltages.v_ds
-                    * (currents.i_ds_min - currents.i_ds_max + currents.i_gs),
-                params.vessels_number
-                    * currents.i_ds_min
-                    * (params.voltages.v_ds - currents.i_ds_max * params.r_ds_dry
-                        + currents.i_gs * params.r_ds_dry),
+                    * (currents.i_ds_off - currents.i_ds_on + currents.i_gs_on),
+                params.voltages.v_ds * (currents.i_ds_off - currents.i_ds_on + currents.i_gs_on),
+                currents.i_ds_off
+                    * (params.voltages.v_ds - currents.i_ds_on * params.r_dry
+                        + currents.i_gs_on * params.r_dry),
             ),
             saturation_coeffs: SaturationCoeffs(
-                params.voltages.v_ds * (currents.i_ds_min - currents.i_ds_max + currents.i_gs),
-                currents.i_ds_min
-                    * (params.voltages.v_ds - currents.i_ds_max * params.r_ds_dry
-                        + currents.i_gs * params.r_ds_dry),
-                currents.i_ds_min * params.r_ds_dry * (currents.i_gs - currents.i_ds_max),
+                params.voltages.v_ds * (currents.i_ds_off - currents.i_ds_on + currents.i_gs_on),
+                currents.i_ds_off
+                    * (params.voltages.v_ds - currents.i_ds_on * params.r_dry
+                        + currents.i_gs_on * params.r_dry),
+                currents.i_ds_off * params.r_dry * (currents.i_gs_on - currents.i_ds_on),
             ),
             currents,
             params,
@@ -174,20 +163,22 @@ impl Model for Equation {
 impl EquationModel for Equation {
     fn value(&self, concentration: f32) -> f32 {
         let m = self.modulation(concentration);
-        let r = self.resistivity(concentration);
+        let r = self.stem_resistance_inv(concentration);
 
         self.func_coeffs.0
-            + (self.func_coeffs.1 + self.func_coeffs.2 * m) / (self.func_coeffs.3 * r * m)
+            + (self.func_coeffs.1 * r + self.func_coeffs.2 * r * m) / (self.func_coeffs.3 * m)
     }
 
     fn gradient(&self, concentration: f32) -> f32 {
         let m = self.modulation(concentration);
-        let r = self.resistivity(concentration);
+        let r = self.stem_resistance_inv(concentration);
         let dm = self.modulation_gradient(concentration);
-        let dr = self.resistivity_gradient(concentration);
+        let dr = self.stem_resistance_inv_gradient(concentration);
 
-        -(self.func_coeffs.1 / self.func_coeffs.3) * ((m * dr + dm * r) / (m * m * r * r))
-            - (self.func_coeffs.2 / self.func_coeffs.3) * (dr / (r * r))
+        (self.func_coeffs.1 * dr + self.func_coeffs.2 * (m * dr + dm * r))
+            / (self.func_coeffs.3 * m)
+            - ((self.func_coeffs.1 + self.func_coeffs.2 * m) * r * dm)
+                / (self.func_coeffs.3 * m * m)
     }
 
     fn resistance(&self, concentration: f32) -> f32 {
@@ -207,101 +198,97 @@ impl EquationModel for Equation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::params::{Currents, Geometrics, Voltages};
+    use crate::params::{Currents, ModulationParams, StemResistanceInvParams, Voltages};
 
-    fn mock_params() -> (Currents, ModelParams) {
+    fn mock_params() -> (ModelParams, Currents) {
         (
-            Currents {
-                i_ds_min: 1.0,
-                i_ds_max: 2.0,
-                i_gs: 3.0,
-            },
             ModelParams {
-                geometrics: Geometrics {
-                    cross_sectional_area: 4.0,
-                    length: 5.0,
-                },
-                r_ds_dry: 6.0,
-                vessels_number: 7.0,
+                mod_params: ModulationParams(1.0, 2.0, 3.0),
+                r_dry: 4.0,
+                res_params: StemResistanceInvParams(5.0, 6.0),
                 voltages: Voltages {
-                    v_ds: 8.0,
-                    v_gs: 9.0,
+                    v_ds: 7.0,
+                    v_gs: 8.0,
                 },
+            },
+            Currents {
+                i_ds_off: 9.0,
+                i_ds_on: 10.0,
+                i_gs_on: 11.0,
             },
         )
     }
 
     #[test]
     fn test_model() {
-        let (currents, params) = mock_params();
+        let (params, currents) = mock_params();
         let model = Equation::new(params, currents);
 
-        assert_eq!(model.func_coeffs.0, 3.0);
-        assert_eq!(
-            model.func_coeffs.1,
-            7.0 * 9.0 * 4.0 * 8.0 * (1.0 - 2.0 + 3.0)
-        );
+        assert_eq!(model.func_coeffs.0, 11.0);
+        assert_eq!(model.func_coeffs.1, 8.0 * 7.0 * (9.0 - 10.0 + 11.0));
         assert_eq!(
             model.func_coeffs.2,
-            7.0 * 9.0 * 4.0 * 1.0 * (8.0 - 2.0 * 6.0 + 3.0 * 6.0)
+            8.0 * 9.0 * (7.0 - 10.0 * 4.0 + 11.0 * 4.0)
         );
-        assert_eq!(model.func_coeffs.3, 1.0 * 6.0 * 5.0 * (2.0 - 3.0));
+        assert_eq!(model.func_coeffs.3, 9.0 * 4.0 * (10.0 - 11.0));
 
-        assert_eq!(model.resistance_coeffs.0, 6.0 * 8.0 * (1.0 - 2.0 + 3.0));
-        assert_eq!(model.resistance_coeffs.1, 7.0 * 8.0 * (1.0 - 2.0 + 3.0));
+        assert_eq!(model.resistance_coeffs.0, 4.0 * 7.0 * (9.0 - 10.0 + 11.0));
+        assert_eq!(model.resistance_coeffs.1, 7.0 * (9.0 - 10.0 + 11.0));
         assert_eq!(
             model.resistance_coeffs.2,
-            7.0 * 1.0 * (8.0 - 2.0 * 6.0 + 3.0 * 6.0)
+            9.0 * (7.0 - 10.0 * 4.0 + 11.0 * 4.0)
         );
 
-        assert_eq!(model.saturation_coeffs.0, 8.0 * (1.0 - 2.0 + 3.0));
+        assert_eq!(model.saturation_coeffs.0, 7.0 * (9.0 - 10.0 + 11.0));
         assert_eq!(
             model.saturation_coeffs.1,
-            1.0 * (8.0 - 2.0 * 6.0 + 3.0 * 6.0)
+            9.0 * (7.0 - 10.0 * 4.0 + 11.0 * 4.0)
         );
-        assert_eq!(model.saturation_coeffs.2, 1.0 * 6.0 * (3.0 - 2.0));
+        assert_eq!(model.saturation_coeffs.2, 9.0 * 4.0 * (11.0 - 10.0));
 
-        assert_eq!(model.currents().i_ds_min, 1.0);
-        assert_eq!(model.currents().i_ds_max, 2.0);
-        assert_eq!(model.currents().i_gs, 3.0);
+        assert_eq!(model.params().mod_params.0, 1.0);
+        assert_eq!(model.params().mod_params.1, 2.0);
+        assert_eq!(model.params().mod_params.2, 3.0);
+        assert_eq!(model.params().r_dry, 4.0);
+        assert_eq!(model.params().res_params.0, 5.0);
+        assert_eq!(model.params().res_params.1, 6.0);
+        assert_eq!(model.params().voltages.v_ds, 7.0);
+        assert_eq!(model.params().voltages.v_gs, 8.0);
 
-        assert_eq!(model.params().geometrics.cross_sectional_area, 4.0);
-        assert_eq!(model.params().geometrics.length, 5.0);
-        assert_eq!(model.params().r_ds_dry, 6.0);
-        assert_eq!(model.params().vessels_number, 7.0);
-        assert_eq!(model.params().voltages.v_ds, 8.0);
-        assert_eq!(model.params().voltages.v_gs, 9.0);
+        assert_eq!(model.currents().i_ds_off, 9.0);
+        assert_eq!(model.currents().i_ds_on, 10.0);
+        assert_eq!(model.currents().i_gs_on, 11.0);
     }
 
     #[test]
     fn test_value() {
-        let (currents, params) = mock_params();
+        let (params, currents) = mock_params();
         let model = Equation::new(params, currents);
 
-        assert!((model.value(1.0) + 1_183.264_2).abs() < 1e-3);
+        assert!((model.value(1.0) + 273.777_77).abs() < 1e-4);
     }
 
     #[test]
     fn test_gradient() {
-        let (currents, params) = mock_params();
+        let (params, currents) = mock_params();
         let model = Equation::new(params, currents);
 
-        assert!((model.gradient(1.0) - 166.475_77).abs() < 1e-4);
+        assert!((model.gradient(1.0) + 116.26).abs() < 1e-3);
     }
 
     #[test]
     fn test_resistance() {
-        let (currents, params) = mock_params();
+        let (params, currents) = mock_params();
         let model = Equation::new(params, currents);
 
-        assert!((model.resistance(1.0) - 0.962_406_01).abs() < 1e-6);
+        assert!((model.resistance(1.0) - 3.004_291_8).abs() < 1e-6);
     }
 
     #[test]
     fn test_saturation() {
-        let (currents, params) = mock_params();
+        let (params, currents) = mock_params();
         let model = Equation::new(params, currents);
 
-        assert!((model.saturation(1.0) - 2.714_285_7).abs() < 1e-6);
+        assert!((model.saturation(1.0) - 3.236_111_1).abs() < 1e-6);
     }
 }

@@ -2,15 +2,15 @@
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ModelParams {
-    /// The geometrical characteristics of each vessel in the stem of the plant.
-    pub geometrics: Geometrics,
+    /// The parameters of the modulation function.
+    pub mod_params: ModulationParams,
 
     /// Eletrical resistance of the dry PEDOT channel before being exposed
     /// to the electrolyte [Ohm].
-    pub r_ds_dry: f32,
+    pub r_dry: f32,
 
-    /// The number of vessels in the stem of the plant [dimensionless].
-    pub vessels_number: f32,
+    /// The parameters of the inverse of stem resistance function.
+    pub res_params: StemResistanceInvParams,
 
     /// The input voltages of the device.
     pub voltages: Voltages,
@@ -20,26 +20,35 @@ pub struct ModelParams {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Currents {
-    /// Minimum current measured between drain and source [Ampere].
-    pub i_ds_min: f32,
+    /// Current measured between drain and source when the gate is off [Ampere].
+    pub i_ds_off: f32,
 
-    /// Maximum current measured between drain and source [Ampere].
-    pub i_ds_max: f32,
+    /// Current measured between drain and source when the gate is on [Ampere].
+    pub i_ds_on: f32,
 
-    /// Current measured between gate and source [Ampere].
-    pub i_gs: f32,
+    /// Current measured between gate and source when the gate is on [Ampere].
+    pub i_gs_on: f32,
 }
 
-/// The geometrical characteristics of each vessel in the stem of the plant.
+/// The parameters of the modulation function.
+/// The function is defined as:
+/// ```text
+/// a * x + b * ln(x) + c
+/// ```
+/// where `x` is the ion concentration, `a`, `b` and `c` are the parameters.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Geometrics {
-    /// Cross sectional area of a vessel in the stem of the plant [Square Metre].
-    pub cross_sectional_area: f32,
+pub struct ModulationParams(pub f32, pub f32, pub f32);
 
-    /// Length of a vessel in the stem of the plant [Metre].
-    pub length: f32,
-}
+/// The parameters of the inverse of stem resistance function.
+/// The function is defined as:
+/// ```text
+/// a + b * x^0.955
+/// ```
+/// where `x` is the ion concentration, `a` and `b` are the parameters.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct StemResistanceInvParams(pub f32, pub f32);
 
 /// The dependent variables of the model.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -49,7 +58,7 @@ pub struct Variables {
     pub concentration: f32,
 
     /// Eletrical resistance of the wet PEDOT channel after being exposed
-    /// to the electrolyte [Ohm].
+    /// to the electrolyte, when the gate is off [Ohm].
     pub resistance: f32,
 
     /// Saturation of the water in the system [dimensionless].

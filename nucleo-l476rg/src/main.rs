@@ -7,29 +7,24 @@ use panic_probe as _; // panic handler
 use stm32l4xx_hal::{delay::Delay, pac, prelude::*};
 
 use bioristor_lib::{
-    algorithms::{AdaptiveSystem, AdaptiveParams, Algorithm},
-    losses::MeanRelative,
-    models::{Model, System},
-    params::{Currents, Geometrics, ModelParams, Voltages},
-    utils::FloatRange,
+    algorithms::{Algorithm, NewtonEquation, NewtonParams},
+    losses::Absolute,
+    models::{Equation, Model},
+    params::{Currents, ModelParams, ModulationParams, StemResistanceInvParams, Voltages},
 };
-use profiler::{cycles_to_ms, Profiler};
+use profiler::{cycles_to_us, Profiler};
 
-const ALG_PARAMS: AdaptiveParams = AdaptiveParams {
-    concentration_init: 1e-3,
-    concentration_steps: 100,
-    max_iterations: 4,
-    resistance_range: FloatRange::new(0.0, 5.0, 100),
-    saturation_range: FloatRange::new(0.0, 1.0, 100),
+const ALG_PARAMS: NewtonParams = NewtonParams {
+    concentration_init: 1e-2,
+    grad_tolerance: 1e-9,
+    max_iterations: 10,
+    tolerance: 1e-15,
 };
 
 const MODEL_PARAMS: ModelParams = ModelParams {
-    geometrics: Geometrics {
-        cross_sectional_area: 2e-8,
-        length: 5e-3,
-    },
-    r_ds_dry: 10.0,
-    vessels_number: 100.0,
+    mod_params: ModulationParams(0.0, -0.01463, -0.32),
+    r_dry: 15.8,
+    res_params: StemResistanceInvParams(1.35e-6, 2.73e-4),
     voltages: Voltages {
         v_ds: -0.05,
         v_gs: 0.5,
@@ -63,37 +58,42 @@ fn main() -> ! {
         .pa5
         .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
 
-    // Setup delay.
-    let mut delay = Delay::new(syst, clocks);
-    delay.delay_ms(1000_u32);
-    syst = delay.free();
-
     let currents = Currents {
-        i_ds_max: -0.0020613,
-        i_ds_min: -0.0024066,
-        i_gs: 7.79e-06,
+        i_ds_on: -0.0028583,
+        i_ds_off: -0.0031083,
+        i_gs_on: 7.775_862e-7,
     };
     defmt::debug!("{}", currents);
 
     // Setup model and algorithm.
-    let model = System::new(MODEL_PARAMS, currents);
+    let model = Equation::new(MODEL_PARAMS, currents);
     defmt::debug!("{}", MODEL_PARAMS);
-    let algorithm: AdaptiveSystem<_, MeanRelative, 10> = AdaptiveSystem::new(ALG_PARAMS, model);
+    let algorithm: NewtonEquation<_, Absolute> = NewtonEquation::new(ALG_PARAMS, model);
     defmt::debug!("{}", ALG_PARAMS);
 
-    defmt::info!("Starting algorithm execution...");
-    led.set_high();
+    // Setup delay.
+    let mut delay = Delay::new(syst, clocks);
+    for _ in 0..5 {
+        led.set_high();
+        delay.delay_ms(500_u32);
+        led.set_low();
+        delay.delay_ms(500_u32);
+    }
+    syst = delay.free();
 
+    defmt::info!("Starting algorithm execution...");
     let profiler = Profiler::new(syst);
 
     // Run algorithm.
     let res = algorithm.run();
 
     let cycles = profiler.cycles();
-    defmt::info!("Execution took {} ms", cycles_to_ms::<CORE_FREQ>(cycles));
+    defmt::info!(
+        "Execution took {} CPU cycles, {} us",
+        cycles,
+        cycles_to_us::<CORE_FREQ>(cycles)
+    );
     syst = profiler.free();
-
-    led.set_low();
 
     match res {
         Some((vars, err)) => {

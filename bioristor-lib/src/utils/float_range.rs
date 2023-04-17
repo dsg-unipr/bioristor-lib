@@ -16,13 +16,13 @@
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FloatRange {
     /// The lower bound of the range (inclusive).
-    start: f32,
+    pub start: f32,
 
     /// The upper bound of the range (exclusive).
-    end: f32,
+    pub end: f32,
 
     /// The number of steps in which the interval is divided.
-    steps: usize,
+    pub steps: usize,
 }
 
 impl FloatRange {

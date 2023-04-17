@@ -1,9 +1,11 @@
 mod adaptive;
+mod adaptive2;
 mod brute_force;
 mod gradient_descent;
 mod newton;
 
 pub use adaptive::*;
+pub use adaptive2::*;
 pub use brute_force::*;
 pub use gradient_descent::*;
 pub use newton::*;

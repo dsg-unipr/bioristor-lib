@@ -72,12 +72,12 @@ where
     /// * `None` - If the algorithm could not find a solution.
     fn run(&self) -> Option<(Variables, f32)> {
         // Best solutions found with their error.
-        let mut best = BestOrderedList::<f32, MINIMA>::new();
+        let mut best_list = BestOrderedList::<f32, MINIMA>::new();
 
         let mut support = self.params.concentration_init;
 
         for _ in 0..self.params.max_iterations {
-            best.clear();
+            best_list.clear();
 
             let c_start = support / 10.0;
             let c_end = support * 10.0;
@@ -89,10 +89,10 @@ where
                 let error = L::evaluate(self.model.value(concentration));
 
                 // Add the solution to the best solutions.
-                best.add_solution((concentration, error));
+                best_list.add_solution((concentration, error));
             }
 
-            let mean = best.mean_concentration();
+            let mean = best_list.mean_concentration();
             let center = (mean - c_start) / (c_end - c_start);
 
             if center > 0.5 {
@@ -102,14 +102,14 @@ where
             }
         }
 
-        let best = best.best();
+        let best = best_list.best();
         Some((
             Variables {
-                concentration: best.0,
-                resistance: self.model.resistance(best.0),
-                saturation: self.model.saturation(best.0),
+                concentration: best,
+                resistance: self.model.resistance(best),
+                saturation: self.model.saturation(best),
             },
-            best.1,
+            L::evaluate(self.model.value(best)),
         ))
     }
 }

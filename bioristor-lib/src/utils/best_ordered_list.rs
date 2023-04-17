@@ -71,19 +71,17 @@ impl<const N: usize> BestOrderedList<f32, N> {
     ///
     /// The best solution.
     #[inline]
-    pub fn best(&self) -> (f32, f32) {
+    pub fn best(&self) -> f32 {
         let mut concentration = 0.0;
-        let mut error = 0.0;
 
         let mut n = 0;
-        for (var, err) in self.data.iter().filter(|(_, e)| e.is_finite()) {
+        for (var, _) in self.data.iter().filter(|(_, e)| e.is_finite()) {
             concentration += var;
-            error += err;
             n += 1;
         }
 
         let n_inv = 1.0 / n as f32;
-        (concentration * n_inv, error * n_inv)
+        concentration * n_inv
     }
 }
 
@@ -474,13 +472,11 @@ mod tests {
         let mut list = BestOrderedList::<f32, 3>::new();
         list.data = [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)];
         let best = list.best();
-        assert_eq!(best.0, 1.0);
-        assert_eq!(best.1, 1.0);
+        assert_eq!(best, 1.0);
 
         list.data = [(0.0, 0.0), (1.0, 1.0), (0.0, f32::INFINITY)];
         let best = list.best();
-        assert_eq!(best.0, 0.5);
-        assert_eq!(best.1, 0.5);
+        assert_eq!(best, 0.5);
 
         let mut list = BestOrderedList::<Variables, 3>::new();
         list.data = [

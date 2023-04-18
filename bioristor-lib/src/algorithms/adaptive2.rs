@@ -72,8 +72,8 @@ where
     ///
     /// # Returns
     ///
-    /// * `Ok((vars, loss))` - The variables and the loss of the solution.
-    /// * `Err(err)` - The error, if the algorithm could not find a solution.
+    /// * `Some((vars, loss))` - The variables and the loss of the solution.
+    /// * `None` - If the algorithm could not find a solution.
     fn run(&self) -> Option<(Variables, f32)> {
         // Best solutions found with their error.
         let mut best_list = BestOrderedList::<f32, MINIMA>::new();

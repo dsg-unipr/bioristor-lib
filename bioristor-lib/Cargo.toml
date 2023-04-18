@@ -11,8 +11,3 @@ repository = "https://github.com/franksacco/bioristor-lib"
 defmt = { version = "0.3.2", optional = true }
 micromath = "2.0.0"
 nalgebra = { version = "0.32.1", default-features = false }
-
-[features]
-default = ["equation"]
-equation = []
-system = []

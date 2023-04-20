@@ -15,6 +15,9 @@ pub struct GradientDescentParams {
     /// The initial guessed value for the concentration.
     pub concentration_init: f32,
 
+    /// The minimum value of the gradient at which the algorithm stops.
+    pub grad_tolerance: f32,
+
     /// The initial learning rate.
     /// This is used in the first iteration and is updated in every iteration
     /// using the Barzilai–Borwein method.
@@ -93,7 +96,10 @@ where
         // Loop until the maximum number of iterations is reached or the error
         // subceeds a certain tolerance.
         let mut iterations = 0;
-        while iterations < self.params.max_iterations && error > self.params.tolerance {
+        while iterations < self.params.max_iterations
+            && error > self.params.tolerance
+            && grad.abs() > self.params.grad_tolerance
+        {
             // Save previous values.
             c_prev = c;
             grad_prev = grad;
@@ -169,6 +175,7 @@ mod tests {
     fn test_gradient_descent_equation() {
         let params = GradientDescentParams {
             concentration_init: 1.0,
+            grad_tolerance: 1e-6,
             learning_rate_init: 0.2,
             max_iterations: 100,
             tolerance: 1e-6,

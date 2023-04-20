@@ -15,14 +15,14 @@ pub struct NewtonParams {
     /// The initial guessed value for the concentration.
     pub concentration_init: f32,
 
+    /// The minimum value of the gradient at which the algorithm stops.
+    pub grad_tolerance: f32,
+
     /// The maximum number of iterations.
     pub max_iterations: usize,
 
     /// The error tolerance at which the algorithm stops.
     pub tolerance: f32,
-
-    /// The minimum value of the gradient at which the algorithm stops.
-    pub grad_tolerance: f32,
 }
 
 /// Implementation of the Newton's method.
@@ -151,9 +151,9 @@ mod tests {
     fn test_newton_equation() {
         let params = NewtonParams {
             concentration_init: 0.5,
+            grad_tolerance: 1e-6,
             max_iterations: 20,
             tolerance: 1e-6,
-            grad_tolerance: 1e-6,
         };
         let model = EquationModelMock;
 

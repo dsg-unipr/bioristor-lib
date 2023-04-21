@@ -175,7 +175,7 @@ mod tests {
     fn test_gradient_descent_equation() {
         let params = GradientDescentParams {
             concentration_init: 1.0,
-            grad_tolerance: 1e-6,
+            grad_tolerance: 1e-9,
             learning_rate_init: 0.2,
             max_iterations: 100,
             tolerance: 1e-6,

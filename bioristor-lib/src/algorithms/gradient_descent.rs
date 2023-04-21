@@ -93,8 +93,8 @@ where
         // Initialize error with loss at starting point.
         let mut error = L::evaluate(self.model.value(c));
 
-        // Loop until the maximum number of iterations is reached or the error
-        // subceeds a certain tolerance.
+        // Loop until the maximum number of iterations is reached, the error
+        // subceeds a certain tolerance, or the gradient becomes too small.
         let mut iterations = 0;
         while iterations < self.params.max_iterations
             && error > self.params.tolerance

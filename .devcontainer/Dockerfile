@@ -36,5 +36,5 @@ RUN rustup default stable \
     && cargo install probe-run \
     # Install clippy for rust-analyzer and rustfmt.
     && rustup component add clippy rustfmt \
-    # Install Rust Toolchain for Cortex-M7 with hardware floating point.
+    # Install Rust Toolchain for Cortex-M4 and Cortex-M7 with hardware floating point.
     && rustup target add thumbv7em-none-eabihf
